@@ -44,8 +44,43 @@ def manual_zoom_function(image, zoom_factor):
 
     return zoomed_image
 
-"""
-Testing by using matplotlib to display the original and zoomed images
+def manual_shrinking_function(image, shrink_factor):
+    """
+    ใช้ algorithm nearest neighbor ในการ shrink ภาพ
+    
+    Parameters:
+    image (numpy.ndarray): ภาพต้นฉบับที่ต้องการ shrink
+    shrink_factor (float): อัตราการ shrink ของภาพ (ค่ามากกว่า 1 คือ shrink in, ค่าน้อยกว่า 1 คือ shrink out)
 
-"""
+    returns:
+    numpy.ndarray: ภาพที่ถูก shrink แล้ว
+    """
+    # step 1: ตรวจสอบว่า shrink_factor เป็นค่าที่ถูกต้อง
+    if shrink_factor <= 0:
+        raise ValueError("shrink_factor must be greater than 0")
 
+    # step 2: convert ภาพเป็นขาวดํา
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # step 3: คํานวณขนาดของภาพใหม่
+    new_height = int(gray_image.shape[0] / shrink_factor)
+    new_width = int(gray_image.shape[1] / shrink_factor)
+
+    # step 4: สร้างภาพใหม่ที่มีขนาดตามที่คํานวณ
+    shrunk_image = np.zeros((new_height, new_width), dtype=image.dtype)
+
+    #step 5: ใช้ algorithm nearest neighbor ในการ shrink ภาพ
+    for i in range(new_height):
+        for j in range(new_width):
+            # คํานวณพิกัดของ pixel เริ้มต้นจากภาพที่ถูก shrink
+            orig_x = int(i * shrink_factor)
+            orig_y = int(j * shrink_factor)
+
+            # ตรวจสอบว่าพิกัดต้นฉบับอยู่ในขอบเขตของภาพต้นฉบับ กรณีมีก่ารปัดเศษส่วน floating
+            orig_x = min(orig_x, gray_image.shape[0] - 1)
+            orig_y = min(orig_y, gray_image.shape[1] - 1)
+
+            # นำ pixel จากภาพต้นฉบับมาใส่ในภาพที่ถูก shrink
+            shrunk_image[i, j] = gray_image[orig_x, orig_y]
+
+    return shrunk_image
