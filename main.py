@@ -1,8 +1,8 @@
 import cv2
 import matplotlib.pyplot as plt
 
-from components import manual_zoom_function
-from components import manual_shrinking_function
+from sampling_component import manual_zoom_function
+from sampling_component import manual_shrinking_function
 
 if __name__ == "__main__":
     image = cv2.imread(r"D:\Github\Image_Process\images\cartoon_6a7499925e31c.jpg")
