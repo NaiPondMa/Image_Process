@@ -5,13 +5,13 @@ from scripts.sampling_component import manual_zoom_function, manual_shrinking_fu
 from scripts.quantization_component import quantize_image
 
 if __name__ == "__main__":
-    image = cv2.imread(r"D:\Github\Image_Process\images\cartoon_6a7499925e31c.jpg")
-    
+    path = (r"D:\Github\Image_Process\images\kittens.jpg")
+    image = cv2.imread(path)
 
     if image is None:
-        raise FileNotFoundError("Image not found: D:\Github\Image_Process\images\cartoon_6a7499925e31c.jpg")
+        raise FileNotFoundError("Image not found:" + path)
 
-    zoomed_image = manual_zoom_function(image, 2.0)
+    zoomed_image = manual_zoom_function(image, 4.0)
     shrinked_image = manual_shrinking_function(image, 4.0)
     quantized_image_1bit = quantize_image(image, 1)
     quantized_image_3bit = quantize_image(image, 3)
@@ -23,11 +23,11 @@ if __name__ == "__main__":
 
     plt.subplot(2, 3, 2)
     plt.imshow(zoomed_image, cmap='gray')
-    plt.title("Zoomed Image")
+    plt.title("Zoomed Image 4x")
 
     plt.subplot(2, 3, 3)
     plt.imshow(shrinked_image, cmap='gray')
-    plt.title("Shrinked Image")
+    plt.title("Shrinked Image 1/4x")
 
     plt.subplot(2, 3, 4)
     plt.imshow(quantized_image_1bit, cmap='gray')
