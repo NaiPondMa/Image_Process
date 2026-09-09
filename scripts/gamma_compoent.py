@@ -5,9 +5,11 @@ the most suitable gamma value for each subimage.
 """
 
 import cv2
+from matplotlib import image
 import numpy as np
 import matplotlib.pyplot as plt
 
 def global_gamma_collection(image, gamma_value):
-
+    return cv2.pow(image / 255.0, gamma_value) * 255.0
 def local_gamma_collection(image, subimage_size, gamma_value):
+    return cv2.pow(image / 255.0, gamma_value) * 255.0  # Placeholder - replace with actual local gamma collection implementation
