@@ -251,3 +251,8 @@ explain the underlying mathematics.
 Found this explanation useful? Please
 **[star the repository on GitHub](https://github.com/NaiPondMa/Image_Process)**
 and share it with someone learning digital image processing.
+
+## Enchancing Image Processing
+
+Problem we found is to calculating or finding the best gamma value and k-values which is getting the best to optimize the picture
+But I dont know how are they doing like manualy input or giving function to calculate best optimize

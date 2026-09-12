@@ -46,54 +46,40 @@ def global_histogram_equalization(image):
             imgEqualized[i,j] = s
 
     return imgEqualized
-def local_histogram_equalization(image, neighborhood_size):
+def local_histogram_equalization(image: np.ndarray, neighborhood_size: int, k0: float, k1: float, k2: float, E: float = 4.0) -> np.ndarray:
     """
-    Perform local histogram equalization on a grayscale image without built-in equalization functions.
+    Local histogram statistics enhancement using mean and standard deviation thresholds.
     
     Args:
-        image (np.ndarray): Grayscale image (2D array).
-        neighborhood_size (int): Size of the local neighborhood (must be odd and >= 3).
-    
-    Returns:
-        np.ndarray: Locally histogram-equalized image.
+        image (np.ndarray): 2D grayscale input image.
+        neighborhood_size (int): Neighborhood window dimension (3, 7, 11).
+        k0 (float): Mean intensity multiplier (m_S <= k0 * m_G).
+        k1 (float): Lower standard deviation multiplier (k1 * sigma_G <= sigma_S).
+        k2 (float): Upper standard deviation multiplier (sigma_S <= k2 * sigma_G).
+        E (float): Multiplier gain factor for dark pixels.
     """
-
     if neighborhood_size < 3 or neighborhood_size % 2 == 0:
         raise ValueError("neighborhood_size must be an odd integer >= 3.")
     
     height, width = image.shape
     pad_size = neighborhood_size // 2
-    
-    # Pad image to handle edge pixels cleanly without reducing output dimensions
     padded_image = np.pad(image, pad_size, mode='reflect')
-    output = np.zeros_like(image, dtype=np.uint8)
     
-    total_pixels = neighborhood_size * neighborhood_size
-
-    # Slide the window over every pixel in the image
+    # Global statistics
+    m_G = np.mean(image)
+    sigma_G = np.std(image)
+    
+    output = image.astype(np.float64).copy()
+    
+    # Process local window around each pixel
     for r in range(height):
         for c in range(width):
-            # Extract the local spatial window
             window = padded_image[r:r + neighborhood_size, c:c + neighborhood_size]
-            center_val = image[r, c]
+            m_S = np.mean(window)
+            sigma_S = np.std(window)
             
-            # Compute 256-bin local histogram and Cumulative Distribution Function (CDF)
-            hist = np.bincount(window.ravel(), minlength=256)
-            cdf = hist.cumsum()
-            
-            # Minimum non-zero value in CDF
-            cdf_min = cdf[cdf > 0][0] if np.any(cdf > 0) else 0
-            
-            # Apply standard equalization formula: T(v) = round(((cdf(v) - cdf_min) / (N - cdf_min)) * 255)
-            if total_pixels - cdf_min > 0:
-                equalized_pixel = np.round(((cdf[center_val] - cdf_min) / (total_pixels - cdf_min)) * 255)
-            else:
-                equalized_pixel = center_val
+            # Local enhancement criteria
+            if (m_S <= k0 * m_G) and (k1 * sigma_G <= sigma_S <= k2 * sigma_G):
+                output[r, c] = E * image[r, c]
                 
-            output[r, c] = np.clip(equalized_pixel, 0, 255)
-
-    return output
-
-
-
-    return cv2.equalizeHist(image)  # Placeholder - replace with actual local histogram equalization implementation
+    return np.clip(output, 0, 255).astype(np.uint8)
