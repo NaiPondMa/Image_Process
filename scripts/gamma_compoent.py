@@ -32,41 +32,45 @@ def global_gamma_correction(image, gamma_value):
 
     return corrected_image
 
-import numpy as np
 
-def local_gamma_correction(image, grid_shape) -> np.ndarray:
+def local_gamma_correction(
+    image: np.ndarray, 
+    grid_shape: tuple[int, int], 
+    gamma_value: float | np.ndarray
+) -> np.ndarray:
     """
-    Divides the image into an N x N grid of subimages (e.g., (2,2) or (3,3)) 
-    and automatically computes the optimal gamma value for each subimage block.
-    """
-    img_height, img_width = image.shape
-    grid_rows, grid_cols = grid_shape
-    corrected_image = np.zeros_like(image, dtype=np.uint8)
+    Applies gamma correction across an N x M grid of subimage blocks.
     
-    # Calculate base dimensions for subimage blocks
+    Supports single scalar gamma values and block-specific 2D gamma arrays.
+    Compatible with both grayscale (2D) and multi-channel color (3D) images.
+    """
+    img_height, img_width = image.shape[:2]
+    grid_rows, grid_cols = grid_shape
+    
+    # Fast path: uniform scalar gamma using direct Lookup Table (LUT)
+    if np.isscalar(gamma_value):
+        lut = np.clip(np.round(((np.arange(256) / 255.0) ** float(gamma_value)) * 255.0), 0, 255).astype(np.uint8)
+        return lut[image]
+    
+    gamma_grid = np.asarray(gamma_value, dtype=float)
+    if gamma_grid.shape != (grid_rows, grid_cols):
+        raise ValueError(f"gamma_value shape {gamma_grid.shape} must match grid_shape {grid_shape}")
+
+    corrected_image = np.empty_like(image)
+    
     block_h = img_height // grid_rows
     block_w = img_width // grid_cols
-    
+
     for r in range(grid_rows):
+        r_start = r * block_h
+        r_end = img_height if r == grid_rows - 1 else (r + 1) * block_h
+        
         for c in range(grid_cols):
-            # Define block boundaries (handles uneven image division at borders)
-            r_start, r_end = r * block_h, (r + 1) * block_h if r < grid_rows - 1 else img_height
-            c_start, c_end = c * block_w, (c + 1) * block_w if c < grid_cols - 1 else img_width
+            c_start = c * block_w
+            c_end = img_width if c == grid_cols - 1 else (c + 1) * block_w
             
-            # Extract subimage block
-            subimage = image[r_start:r_end, c_start:c_end]
-            
-            # Calculate normalized mean intensity of the subimage
-            mean_intensity = np.mean(subimage) / 255.0
-            mean_intensity = np.clip(mean_intensity, 1e-4, 1.0 - 1e-4)  # Avoid log(0) or log(1)
-            
-            # Find the dynamic gamma for this specific subimage (maps mean to mid-gray 0.5)
-            gamma_suitable = np.log(0.5) / np.log(mean_intensity)
-            
-            # Apply gamma correction to the subimage
-            sub_norm = subimage / 255.0
-            sub_corrected = (sub_norm ** gamma_suitable) * 255.0
-            
-            corrected_image[r_start:r_end, c_start:c_end] = np.clip(np.round(sub_corrected), 0, 255).astype(np.uint8)
-            
+            # Precompute 256-entry LUT for this block's specific gamma
+            lut = np.clip(np.round(((np.arange(256) / 255.0) ** gamma_grid[r, c]) * 255.0), 0, 255).astype(np.uint8)
+            corrected_image[r_start:r_end, c_start:c_end] = lut[image[r_start:r_end, c_start:c_end]]
+
     return corrected_image

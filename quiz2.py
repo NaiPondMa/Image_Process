@@ -27,14 +27,14 @@ if __name__ == "__main__":
     # Local histogram equalization with different neighborhood sizes
     local_hist_eq_image_3x3 = local_histogram_equalization(image, 3, 0.4,0.1,0.4)
     local_hist_eq_image_7x7 = local_histogram_equalization(image, 7, 0.4,0.1,0.4)
-    local_hist_eq_image_11x11 = local_histogram_equalization(image, 11,0.4,0.02,0.6)
+    local_hist_eq_image_11x11 = local_histogram_equalization(image, 11,0.3,0.06,0.65)
 
     # Global gamma correction
     global_gamma_image = global_gamma_correction(image, 0.4)  # Example gamma value
 
     # Local gamma correction with different subimage sizes
-    local_gamma_image_2x2 = local_gamma_correction(image, (2, 2))  
-    local_gamma_image_3x3 = local_gamma_correction(image, (3, 3))  
+    local_gamma_image_2x2 = local_gamma_correction(image, (2, 2), 0.5)  
+    local_gamma_image_3x3 = local_gamma_correction(image, (3, 3), 0.45)  
 
     plt.subplot(2, 4, 1)
     plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
@@ -58,14 +58,14 @@ if __name__ == "__main__":
 
     plt.subplot(2, 4, 6)
     plt.imshow(global_gamma_image, cmap='gray')
-    plt.title("Global Gamma Collection")
+    plt.title("Global Gamma Correction")
 
     plt.subplot(2, 4, 7)
     plt.imshow(local_gamma_image_2x2, cmap='gray')
-    plt.title("Local Gamma Collection (2x2)")
+    plt.title("Local Gamma Correction (2x2)")
 
     plt.subplot(2, 4, 8)
     plt.imshow(local_gamma_image_3x3, cmap='gray')
-    plt.title("Local Gamma Collection (3x3)")
+    plt.title("Local Gamma Correction (3x3)")
 
     plt.show()
