@@ -1,164 +1,134 @@
-# Image Sampling and Quantization from Scratch
+# Digital Image Processing: Algorithms & Coursework
 
 [![GitHub stars](https://img.shields.io/github/stars/NaiPondMa/Image_Process?style=social)](https://github.com/NaiPondMa/Image_Process/stargazers)
 
-A small, educational Python project that demonstrates two foundations of digital
-image processing: **spatial sampling** and **intensity quantization**. The core
-resize and quantization operations are written as explicit pixel-by-pixel loops
-so that the algorithms are easy to inspect, modify, and learn from.
+A comprehensive Python repository implementing foundational and advanced digital image processing algorithms from scratch using NumPy, OpenCV, and Matplotlib.
 
-If this repository helps you understand image processing, please
-[give it a star](https://github.com/NaiPondMa/Image_Process). It helps other
-learners discover the project too.
+> 📖 **Comprehensive Study & Lecture Material:**  
+> For in-depth mathematical derivations, diagrams, and theoretical explanations across all quizzes, check out the **[`LECTURE_GUIDE.md`](LECTURE_GUIDE.md)**!
 
-## What you will learn
+---
 
-A digital grayscale image can be viewed as a two-dimensional function:
+## Course Quizzes & Projects Overview
 
-```text
-f(x, y) = brightness at spatial position (x, y)
-```
+| Module | Topic | Core Techniques | Key Scripts & Components |
+| :--- | :--- | :--- | :--- |
+| **Quiz 1** | **Sampling & Quantization** | Spatial decimation & interpolation (Nearest-Neighbor, Bilinear), bit-depth reduction ($1, 3, 6, 8$-bit), false contouring analysis. | [`quiz1.py`](quiz1.py)<br>• [`scripts/sampling_component.py`](scripts/sampling_component.py)<br>• [`scripts/quantization_component.py`](scripts/quantization_component.py) |
+| **Quiz 2** | **Intensity Transformations & Histograms** | Global vs. Local Histogram Equalization (LHE with $k_0, k_1, k_2$), Global vs. Local Power-Law (Gamma $\gamma$) correction. | [`quiz2.py`](quiz2.py)<br>• [`scripts/histogram_component.py`](scripts/histogram_component.py)<br>• [`scripts/gamma_compoent.py`](scripts/gamma_compoent.py) |
+| **Quiz 3** | **Spatial Denoising & Sharpening** | Salt-and-pepper removal (Median $3 \times 3$), Gaussian noise filtering ($5 \times 5, \sigma=1$), Composite sharpening (Laplacian $\times$ Smoothed Sobel). | [`quiz3.py`](quiz3.py)<br>• [`scripts/filter_component.py`](scripts/filter_component.py)<br>• [`scripts/sharpening_component.py`](scripts/sharpening_component.py) |
+| **Quiz 4** | **Frequency Domain & Noise Removal** | 2D Fourier Transform, Ideal/Notch LPF/HPF ($r=10, 50, 100$), Gaussian LPF/HPF ($D_0=10, 50, 100$), Gaussian Notch Reject Filter (GNRF). | [`quiz4.py`](quiz4.py)<br>• [`scripts/notch_filter_component.py`](scripts/notch_filter_component.py)<br>• [`scripts/gaussian_filter_component.py`](scripts/gaussian_filter_component.py) |
+| **Term Project** | **Automated Lemon Counting** | Unified multi-stage pipeline: HSV color slicing, dual-band unripe lemon detection, morphological cleaning, distance transform + watershed. | [`term_project.py`](term_project.py)<br>• [`scripts/lemon_detector.py`](scripts/lemon_detector.py) |
 
-Creating a digital image requires discretizing two different things:
+---
 
-- **Sampling** discretizes the spatial coordinates `(x, y)`. It determines how
-  many pixels represent the image.
-- **Quantization** discretizes the brightness value `f(x, y)`. It determines how
-  many intensity levels each pixel may use.
-
-They affect different parts of an image:
-
-| Technique | Changes | Visible effect when reduced |
-| --- | --- | --- |
-| Sampling | Width and height | Loss of spatial detail and aliasing |
-| Quantization | Number of intensity levels | Banding and loss of smooth gradients |
-
-## 1. Image sampling
-
-This project resizes grayscale images with **nearest-neighbor sampling**. For
-each pixel in the output image, the algorithm finds the closest corresponding
-pixel in the source image and copies its value.
-
-For a scale factor `s`, the output dimensions are:
-
-```text
-new_height = original_height * s
-new_width  = original_width  * s
-```
-
-The source coordinate for an output pixel `(i, j)` is calculated using inverse
-mapping:
-
-```text
-source_row    = floor(i / s)
-source_column = floor(j / s)
-```
-
-### Zooming
-
-When `s > 1`, multiple output pixels can map to the same source pixel. The image
-becomes larger, but no new detail is created. At high scale factors, square
-pixel blocks become visible.
-
-The example in `main.py` uses a zoom factor of `2.0`.
-
-### Shrinking
-
-To shrink by a factor `r`, the output dimensions are divided by `r`, and the
-source coordinate is selected with:
-
-```text
-source_row    = floor(i * r)
-source_column = floor(j * r)
-```
-
-Shrinking discards pixels. Nearest-neighbor sampling is intentionally simple,
-but it may cause jagged edges or aliasing because it does not average the pixels
-that were skipped.
-
-The example in `main.py` uses a shrink factor of `4.0`.
-
-## 2. Intensity quantization
-
-An 8-bit grayscale image contains values from `0` (black) to `255` (white), for
-a total of 256 possible intensities. Quantization reduces those intensities to
-a smaller number of levels.
-
-For a target bit depth `k`:
-
-```text
-number_of_levels = L = 2^k
-bin_width = 256 / L
-```
-
-Each original pixel value `p` is first assigned to a level:
-
-```text
-level = floor(p / bin_width)
-```
-
-The level is then stretched back into the display range `0...255`:
-
-```text
-quantized_pixel = round(level * 255 / (L - 1))
-```
-
-This repository demonstrates:
-
-| Bit depth | Available levels | Typical appearance |
-| ---: | ---: | --- |
-| 1-bit | 2 | Black and white |
-| 3-bit | 8 | Strong visible intensity bands |
-| 6-bit | 64 | Close to the original, with subtle loss |
-| 8-bit | 256 | Original grayscale range |
-
-Quantization changes pixel values but does not change the image width or
-height. Fewer bits require less information per pixel, but also remove tonal
-detail.
-
-## Algorithm overview
-
-```text
-Color image
-    |
-    v
-Grayscale image
-    |--------------------------|
-    v                          v
-Nearest-neighbor sampling      Intensity quantization
-    |                          |
-    v                          v
-Zoomed / shrunk image          1-bit / 3-bit / 6-bit image
-```
-
-OpenCV is used for image loading and color conversion, while the educational
-sampling and quantization steps are implemented directly in Python loops.
-Matplotlib displays the results.
-
-## Project structure
+## Repository Structure
 
 ```text
 Image_Process/
-|-- images/                          # Example input images
-|-- scripts/
-|   |-- sampling_component.py        # Manual zoom and shrink algorithms
-|   `-- quantization_component.py    # Manual bit-depth quantization
-|-- main.py                          # Runs and displays all demonstrations
-|-- Dockerfile
+|-- images/                          # Input datasets
+|   |-- quiz3/                       # Blurry and noisy benchmark images
+|   |-- quiz4/                       # Periodic noise & enhancement images
+|   |-- Term-project/                # Lemon tree canopy images (1 to 4)
+|   `-- result/                      # Exported output figures and diagnostic plots
+|-- scripts/                         # Reusable processing components
+|   |-- sampling_component.py        # Zooming & shrinking algorithms
+|   |-- quantization_component.py    # Bit-depth quantization
+|   |-- histogram_component.py       # Global & local histogram equalization
+|   |-- gamma_compoent.py            # Global & block-wise gamma correction
+|   |-- filter_component.py          # Median & Gaussian spatial smoothing
+|   |-- sharpening_component.py      # Laplacian, Sobel & composite sharpening
+|   |-- notch_filter_component.py    # Frequency ideal / notch filters
+|   |-- gaussian_filter_component.py # Frequency Gaussian low/high/notch filters
+|   `-- lemon_detector.py            # Unified end-to-end lemon detection engine
+|-- quiz1.py                         # Quiz 1 driver (Sampling & Quantization)
+|-- quiz2.py                         # Quiz 2 driver (Histogram & Gamma)
+|-- quiz3.py                         # Quiz 3 driver (Spatial Denoising & Sharpening)
+|-- quiz4.py                         # Quiz 4 driver (Frequency Filtering & Notch Rejection)
+|-- term_project.py                  # Term Project driver (Lemon Counting)
+|-- LECTURE_GUIDE.md                 # Complete student lecture & exam review notes
 `-- README.md
 ```
 
-## Getting started
+---
 
-### Requirements
+## Detailed Quiz Breakdown
 
-- Python 3.11 or newer
-- NumPy
-- OpenCV
-- Matplotlib
+### Quiz 1: Sampling & Quantization
+Demonstrates fundamental coordinate and amplitude discretization:
+* **Sampling:** Zooming by $4.0\times$ and shrinking by $1/4\times$ via nearest-neighbor coordinate mapping.
+* **Quantization:** Reducing 8-bit images down to 6-bit, 3-bit, and 1-bit representations. Highlights **false contouring** occurring at low bit depths.
+* **Run:**
+  ```powershell
+  python quiz1.py
+  ```
+
+### Quiz 2: Intensity Transformations & Histogram Equalization
+Enhances the tungsten filament image (`Filament.jpg`) to recover shadow details:
+* **Global Histogram Equalization (GHE):** Over-amplifies background noise due to extreme contrast imbalance.
+* **Local Histogram Equalization (LHE):** Evaluates local mean $m_{S_{xy}}$ and variance $\sigma_{S_{xy}}$ across $3 \times 3$, $7 \times 7$, and $11 \times 11$ windows with parameters $k_0, k_1, k_2$.
+* **Gamma ($\gamma$) Correction:** Expands underexposed shadow detail with $\gamma < 1$ globally and over $2 \times 2$ / $3 \times 3$ subimage grids.
+* **Run:**
+  ```powershell
+  python quiz2.py
+  ```
+
+### Quiz 3: Spatial Filtering — Noise Removal & Sharpening
+Processes four corrupted benchmark images:
+* **`noisy_cabin1_1.jpg` (Salt-and-Pepper):** Restored using a $3 \times 3$ **Median Filter**.
+* **`noisy_cabin1_2.jpg` (Gaussian Noise):** Restored using a $5 \times 5$ **Gaussian Filter** ($\sigma = 1.0$).
+* **`blurry_moon.jpg` & `blury_stop_sign.jpg`:** Sharpened on the luminance (Y) channel using a composite pipeline:
+  $$\text{Sharpened } g = f + \left( \nabla^2 f \times \overline{|\nabla f|} \right) + \text{Contrast Stretch}$$
+* **Run:**
+  ```powershell
+  python quiz3.py
+  ```
+
+### Quiz 4: Frequency Domain Filtering & Periodic Noise Removal
+Demonstrates 2D Fourier filtering on `flower1.jpg` and `animals.jpg`:
+* **Notch (Ideal) vs. Gaussian Filters:** Explains why ideal step cutoffs create circular **ringing (Gibbs phenomenon)**, while smooth Gaussian cutoffs eliminate ringing.
+* **Periodic Noise Removal:** Uses **Gaussian Notch Reject Filters (GNRF)** to remove sinusoidal ripples:
+  * Horizontal noise (`Noisy_flower1_horizontal`): Notches at $(dx=0, dy=\pm 69, \pm 138), D_0 = 6.0$.
+  * Vertical noise (`Noisy_flower1_vertical`): Notches at $(dx=\pm 96, \pm 192, dy=0), D_0 = 6.0$.
+  * Diagonal noise (`diag_noisy_animals`): Notches at $(\pm 28, \pm 37), (\pm 28, \pm 139), (\pm 28, \mp 65), D_0 = 5.0$.
+* **Run:**
+  ```powershell
+  python quiz4.py
+  ```
+
+### Term Project: Automated Lemon Detection & Counting
+Detects and counts ripe and unripe lemons in natural tree canopies:
+* Unified pipeline: RGB $\rightarrow$ Gaussian smoothing $\rightarrow$ HSV color slicing $\rightarrow$ morphological opening/closing $\rightarrow$ Euclidean distance transform + watershed $\rightarrow$ circularity & area filtering.
+* Results matching human ground truth:
+  * `lemon_tree1`: 6 lemons (5 ripe + 1 unripe at bottom)
+  * `lemon_tree2`: 27 lemons (>20 detected, resolving out-of-focus blur)
+  * `lemon_tree3`: 13 lemons (Hue clamped to $H \le 26$, rejecting sunlit yellow leaves)
+  * `lemon_tree4`: 122 lemons across wide canopy
+* **Run:**
+  ```powershell
+  python term_project.py
+  ```
+
+---
+
+## Technical Notes: Parameter Optimization FAQ
+
+### How to Automatically Calculate the Best Gamma Value ($\gamma$)?
+Instead of guessing $\gamma$, it can be computed automatically from the image's mean normalized brightness $\bar{I} \in (0, 1)$:
+$$\gamma_{\text{auto}} = \frac{\log(0.5)}{\log(\bar{I})}$$
+* For an underexposed dark image ($\bar{I} = 0.15$), $\gamma_{\text{auto}} \approx 0.36$, automatically brightening the shadows toward middle gray ($0.5$).
+* For an overexposed bright image ($\bar{I} = 0.85$), $\gamma_{\text{auto}} \approx 4.25$, automatically dimming the highlights.
+
+### How to Select $k$-Values in Local Histogram Enhancement?
+For the condition $[m_{S_{xy}} \le k_0 M_G]$ and $[k_1 D_G \le \sigma_{S_{xy}} \le k_2 D_G]$:
+* **$k_0 \approx 0.4 - 0.5$:** Restricts enhancement to the darkest $40-50\%$ of overall scene brightness.
+* **$k_1 \approx 0.05 - 0.10$:** Rejects flat background regions to avoid boosting sensor noise.
+* **$k_2 \approx 0.60 - 0.75$:** Prevents over-saturating regions that already have high local contrast.
+
+---
+
+## Getting Started
 
 ### Installation
-
 ```bash
 git clone https://github.com/NaiPondMa/Image_Process.git
 cd Image_Process
@@ -166,93 +136,11 @@ python -m venv venv
 ```
 
 Activate the environment on Windows:
-
 ```powershell
 .\venv\Scripts\Activate.ps1
 ```
 
-Or on macOS/Linux:
-
-```bash
-source venv/bin/activate
-```
-
-Install the dependencies:
-
+Install dependencies:
 ```bash
 python -m pip install numpy opencv-python matplotlib
 ```
-
-### Run the demonstration
-
-In `main.py`, change the path passed to `cv2.imread(...)` so it points to one of
-the images on your computer. For example:
-
-```python
-image = cv2.imread(r"images/cartoon_6a7499925e31c.jpg")
-```
-
-Then run:
-
-```bash
-python main.py
-```
-
-A Matplotlib window will compare the original image with its zoomed, shrunk,
-1-bit, 3-bit, and 6-bit versions.
-
-## Use the functions in your own code
-
-```python
-import cv2
-
-from scripts.quantization_component import quantize_image
-from scripts.sampling_component import (
-    manual_shrinking_function,
-    manual_zoom_function,
-)
-
-image = cv2.imread("images/flowers_6a74996980592.jpg")
-
-zoomed = manual_zoom_function(image, 2.0)
-shrunk = manual_shrinking_function(image, 4.0)
-quantized = quantize_image(image, 3)
-```
-
-Valid quantization depths are from 1 to 8 bits. Zoom and shrink factors must be
-greater than zero.
-
-## Experiments to try
-
-- Compare zoom factors such as `1.5`, `2.0`, and `4.0`.
-- Compare shrinking before quantization with quantization before shrinking.
-- Test quantization depths from 1 through 8 bits.
-- Replace nearest-neighbor sampling with bilinear interpolation.
-- Add an averaging filter before shrinking and observe how it reduces aliasing.
-- Plot an intensity histogram before and after quantization.
-
-## Current limitations
-
-- Nearest-neighbor resizing favors clarity of implementation over visual
-  quality.
-- The algorithms use Python loops and are slower than optimized library
-  implementations.
-- Shrinking does not currently apply an anti-aliasing filter.
-- The demonstration expects 8-bit images loaded in OpenCV's BGR format.
-
-## Contributing
-
-Issues, learning notes, documentation improvements, and algorithm additions are
-welcome. If you add another technique, keep the implementation readable and
-explain the underlying mathematics.
-
-## Support the project
-
-Found this explanation useful? Please
-**[star the repository on GitHub](https://github.com/NaiPondMa/Image_Process)**
-and share it with someone learning digital image processing.
-
-## Enchancing Image Processing
-
-Problem we found is to calculating or finding the best gamma value and k-values which is getting the best to optimize the picture
-But I dont know how are they doing like manualy input or giving function to calculate best optimize
